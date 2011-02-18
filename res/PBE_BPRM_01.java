@@ -1,8 +1,8 @@
 public class PBE_BPRM_01 {
   {
-    new float
+    new String
     {
-      4
+      "asdf"
     }
     ;
   }

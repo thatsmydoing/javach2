@@ -1,6 +1,6 @@
 public class ISE_BCMP_04 {
   {
-    if (100 =<10){
+    if (100 =>10){
 
   }
   }

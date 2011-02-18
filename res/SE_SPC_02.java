@@ -1,7 +1,8 @@
 public class SE_SPC_02 {
-  public int do
+  public String com
+  posite;
 
-  Something() {
-    return 0;
+  {
+
   }
 }

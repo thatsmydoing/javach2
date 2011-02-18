@@ -2,6 +2,6 @@ public class CPE_TYPARG_17 {
   {
     int num = 5;
     String txt = "txt";
-    doSomething(int 5, 5);
+    doSomething(String txt, 5);
   }
 }
