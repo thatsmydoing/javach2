@@ -1,10 +1,10 @@
 package edu.ateneo.javach;
 
 import au.com.bytecode.opencsv.CSVWriter;
-import edu.ateneo.javach.parser.*;
+import edu.ateneo.javach.features.FeatureSet;
 
 import java.io.*;
-import java.util.*;
+import java.util.Arrays;
 
 public class FeatureExtractor {
   public static final int NUM_ERRORS = 3;
@@ -59,7 +59,7 @@ public class FeatureExtractor {
         return name.endsWith(".java");
       }
     });
-
+    Arrays.sort(files);
     String lastClass = "";
     for(File f : files) {
       String currClass = f.getName();
@@ -82,22 +82,8 @@ public class FeatureExtractor {
   public String[] processFile(File f) {
     try {
       System.out.printf("Processing %-60s", f.getName() + "...");
-      String[] params = new String[2];
-      params[0] = "javac";
-      params[1] = f.getPath();
-      Process p = Runtime.getRuntime().exec(params);
-      Scanner sc = new Scanner(p.getErrorStream());
-
-      DiagnosticParser dp = new DiagnosticParser();
-      while (sc.hasNextLine()) {
-        dp.parse(sc.nextLine());
-      }
-
-      Scanner fileScanner = new Scanner(f);
-      fileScanner.useDelimiter("\\Z");
-      SourceParser sp = new SourceParser(fileScanner.next());
-      ContextFinder scf = new TopDownContextFinder(sp);
-
+      FeatureSet fs = edu.ateneo.javach.features.FeatureSet.extractFeature(f);
+      
       String[] output = new String[NUM_COLS];
 
       String basename = f.getName();
@@ -105,18 +91,14 @@ public class FeatureExtractor {
       output[NUM_COLS-2] = basename;
       output[NUM_COLS-1] = basename.substring(basename.indexOf("_")+1);
 
-      List<Diagnostic> diagnostics = dp.getDiagnostics();
-      if(diagnostics.size() > 0) {
-        Diagnostic d = diagnostics.get(0);
-        sp.goTo(d.lineNumber, d.columnNumber);
-        int lastIndex = sp.getIndex();
+      if(fs != null) {
         output[EXTRA_FEATURES-4] = f.getName();
-        output[EXTRA_FEATURES-3] = diagnostics.size() + "";
-        output[EXTRA_FEATURES+2] = getErrorCharType(sp.currChar());
-        output[EXTRA_FEATURES+1] = (int)sp.currChar() + "";
-        output[EXTRA_FEATURES-2] = scf.getContext(d.lineNumber, d.columnNumber).toString();
-        output[EXTRA_FEATURES-1] = scf.getPreviousContext().toString();
-        output[EXTRA_FEATURES] = d.errorClass;
+        output[EXTRA_FEATURES-3] = fs.errorCount + "";
+        output[EXTRA_FEATURES+2] = fs.errors.get(0).characterType;
+        output[EXTRA_FEATURES+1] = fs.errors.get(0).character + "";
+        output[EXTRA_FEATURES-2] = fs.context.toString();
+        output[EXTRA_FEATURES-1] = fs.outerContext.toString();
+        output[EXTRA_FEATURES] = fs.errors.get(0).error;
 
         for(int i = 1; i < NUM_ERRORS; i++) {
           int offset = -10000;
@@ -124,14 +106,11 @@ public class FeatureExtractor {
           String errorChar = "none";
           String errorType = "none";
 
-          if(i < diagnostics.size()) {
-            d = diagnostics.get(i);
-            sp.goTo(d.lineNumber, d.columnNumber);
-            offset = sp.getIndex() - lastIndex;
-            lastIndex = sp.getIndex();
-            errorMessage = d.errorClass;
-            errorChar = (int)sp.currChar() + "";
-            errorType = getErrorCharType(sp.currChar());
+          if(i < fs.errors.size()) {
+            errorMessage = fs.errors.get(i).error;
+            errorChar = fs.errors.get(i).character + "";
+            errorType = fs.errors.get(i).characterType;
+            offset = fs.errors.get(i).offset;
           }
 
           output[i*FEATURES_PER_ERROR+EXTRA_FEATURES-1] = errorMessage;
@@ -149,11 +128,4 @@ public class FeatureExtractor {
     }
     return null;
   }
-
-  static String getErrorCharType(char input) {
-    if(Character.isLetter(input)) return "letter";
-    if(Character.isDigit(input)) return "digit";
-    return (int)input + "";
-  }
 }
-
