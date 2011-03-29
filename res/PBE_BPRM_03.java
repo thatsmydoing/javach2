@@ -1,9 +1,5 @@
 public class PBE_BPRM_03 {
   {
-    new String
-    {
-      3
-    }
-    ;
+    new Something{5, "asdf"};
   }
 }

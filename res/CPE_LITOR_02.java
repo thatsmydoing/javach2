@@ -1,9 +1,7 @@
 public class CPE_LITOR_02 {
   {
-    if (false
-    and
-    true){
+    if (false and true) {
 
-  }
+    }
   }
 }

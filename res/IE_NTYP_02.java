@@ -1,5 +1,5 @@
-public class class{
-public void doSomething(a,b){
-
-    }
-    }
+public class IE_NTYP_02 {
+  public void doSomething(a,b){
+  
+  }
+}

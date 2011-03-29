@@ -1,6 +1,5 @@
 public class CBE_NNEW_01 {
-  int[] a =
-  int[5];
+  int[] a = int[5];
 
   {
 

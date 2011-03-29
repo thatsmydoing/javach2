@@ -1,5 +1,9 @@
 public class UM_WPRM_04 {
+  public void doSomething(String a) {}
+  public void doSomething(boolean a) {}
+  
   {
-    System.out.println("Hello %s", "World");
+    Object z;
+    doSomething(z);
   }
 }
