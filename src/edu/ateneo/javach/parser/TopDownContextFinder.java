@@ -40,7 +40,7 @@ public class TopDownContextFinder extends ContextFinder {
     contextStack = new Stack<Context>();
     contextStack.push(Context.PREVIOUS);
     nextContext = Context.ROOT;
-    while(!contextStack.isEmpty()) {
+    while(!contextStack.isEmpty() && !parser.isEOF()) {
       Context currContext = contextStack.peek();
       if(nextContext == Context.PREVIOUS) {
         Context from = contextStack.pop();
@@ -59,7 +59,8 @@ public class TopDownContextFinder extends ContextFinder {
   }
 
   public Context getPreviousContext() {
-    return contextList.get(--lastContextIndex).context;
+    if(--lastContextIndex < 0) return Context.ROOT;
+    return contextList.get(lastContextIndex).context;
   }
 
   ContextHandler getContextHandler(Context c) {
@@ -89,6 +90,7 @@ public class TopDownContextFinder extends ContextFinder {
       case FOR_BLOCK:
       case WHILE_BLOCK:
       case METHOD_BODY:
+      case ELSE_BLOCK:
       case BLOCK:
         return blockH;
       case SWITCH_BLOCK:
@@ -154,14 +156,14 @@ public class TopDownContextFinder extends ContextFinder {
       parser.prevChar();
       String type = parser.nextGroup();
       String name = parser.nextGroup();
-      while(true) {
+      while(!parser.isEOF()) {
         String nextWord = parser.nextGroup();
         if(nextWord.equals("extends")) {
           String parent = parser.nextGroup();
         }
         else if(nextWord.equals("implements")) {
           String parent = parser.nextGroup();
-          while(true) {
+          while(!parser.isEOF()) {
             String nextWord2 = parser.nextGroup();
             if(nextWord2.equals(",")) {
               parent = parser.nextGroup();
@@ -202,10 +204,13 @@ public class TopDownContextFinder extends ContextFinder {
       else if(nextWord.equals(")")) {
         nextContext = Context.PREVIOUS;
       }
+      else if(nextWord.equals(",")) {
+        nextContext = Context.PREVIOUS;
+      }
       else {
         int lastLineNumber = parser.getLineNumber();
-        while(true) {
-          nextWord = parser.nextWord();
+        while(!parser.isEOF()) {
+          nextWord = parser.nextGroup(false);
           if(nextWord.equals("(")) {
             parser.loadPos();
             nextContext = Context.METHOD_DECLARATION;
@@ -228,8 +233,8 @@ public class TopDownContextFinder extends ContextFinder {
   ContextHandler variableDeclarationH = new ContextHandler() {
     public void enterFrom(Context c) {
       int lastLineNumber = parser.getLineNumber();
-      while(true) {
-        String nextWord = parser.nextWord();
+      while(!parser.isEOF()) {
+        String nextWord = parser.nextGroup(false);
         if(nextWord.equals(",") || nextWord.equals(";") || nextWord.equals(")") || lastLineNumber < parser.getLineNumber()) {
           nextContext = Context.PREVIOUS;
           return;
@@ -248,8 +253,8 @@ public class TopDownContextFinder extends ContextFinder {
 
   ContextHandler methodDeclarationH = new ContextHandler() {
     public void enterFrom(Context c) {
-      while(true) {
-        String nextWord = parser.nextWord();
+      while(!parser.isEOF()) {
+        String nextWord = parser.nextGroup(false);
         if(nextWord.equals("(")) {
           nextContext = Context.METHOD_DECLARATION_PARAMETERS;
           return;
@@ -259,7 +264,7 @@ public class TopDownContextFinder extends ContextFinder {
 
     public void exitFrom(Context c) {
       if(c == Context.METHOD_DECLARATION_PARAMETERS) {
-        parser.nextWord();
+        parser.nextGroup(false);
         nextContext = Context.METHOD_BODY;
       }
       else {
@@ -292,21 +297,21 @@ public class TopDownContextFinder extends ContextFinder {
       String nextWord = parser.nextGroup();
       if(nextWord.equals("for")) {
         nextContext = Context.FOR_PARAMETERS;
-        parser.nextWord();
+        parser.nextGroup(false);
       }
       else if(nextWord.equals("if")) {
         nextContext = Context.IF_PARAMETERS;
-        parser.nextWord();
+        parser.nextGroup(false);
       }
       else if(nextWord.equals("while")) {
         nextContext = Context.WHILE_PARAMETERS;
-        parser.nextWord();
+        parser.nextGroup(false);
       }
       else if(nextWord.equals("switch")) {
         nextContext = Context.SWITCH_PARAMETERS;
       }
       else if(nextWord.equals("else")) {
-        nextWord = parser.nextWord();
+        nextWord = parser.nextGroup(false);
         if(nextWord.equals("{")) {
           nextContext = Context.ELSE_BLOCK;
         }
@@ -319,8 +324,8 @@ public class TopDownContextFinder extends ContextFinder {
       }
       else {
         int counter = 1;
-        while(true) {
-          nextWord = parser.nextWord();
+        while(!parser.isEOF()) {
+          nextWord = parser.nextGroup(false);
           if(nextWord.equals("=") && counter > 1) {
             parser.loadPos();
             nextContext = Context.VARIABLE_DECLARATION;
@@ -338,7 +343,7 @@ public class TopDownContextFinder extends ContextFinder {
 
     public void exitFrom(Context c) {
       if(c == Context.FOR_PARAMETERS) {
-        String nextWord = parser.nextWord();
+        String nextWord = parser.nextGroup(false);
         if(nextWord.equals("{")) {
           nextContext = Context.FOR_BLOCK;
         }
@@ -347,7 +352,7 @@ public class TopDownContextFinder extends ContextFinder {
         }
       }
       else if(c == Context.IF_PARAMETERS) {
-        String nextWord = parser.nextWord();
+        String nextWord = parser.nextGroup(false);
         if(nextWord.equals("{")) {
           nextContext = Context.IF_BLOCK;
         }
@@ -356,7 +361,7 @@ public class TopDownContextFinder extends ContextFinder {
         }
       }
       else if(c == Context.WHILE_PARAMETERS) {
-        String nextWord = parser.nextWord();
+        String nextWord = parser.nextGroup(false);
         if(nextWord.equals("{")) {
           nextContext = Context.WHILE_BLOCK;
         }
@@ -368,7 +373,7 @@ public class TopDownContextFinder extends ContextFinder {
         }
       }
       else if(c == Context.SWITCH_PARAMETERS) {
-        parser.nextWord();
+        parser.nextGroup(false);
         nextContext = Context.SWITCH_BLOCK;
       }
       else {
@@ -380,8 +385,8 @@ public class TopDownContextFinder extends ContextFinder {
   ContextHandler expressionH = new ContextHandler() {
     public void enterFrom(Context c) {
       int counter = 1;
-      while(true) {
-        String nextWord = parser.nextWord();
+      while(!parser.isEOF()) {
+        String nextWord = parser.nextGroup(false);
         if(nextWord.equals("=")) {
           nextContext = Context.PREVIOUS;
           return;
@@ -419,8 +424,11 @@ public class TopDownContextFinder extends ContextFinder {
 
   ContextHandler booleanH = new ContextHandler() {
     public void enterFrom(Context c) {
-      while(true) {
-        String nextWord = parser.nextWord();
+      while(!parser.isEOF()) {
+        String nextWord = parser.nextGroup(false);
+        if(nextWord == null) {
+          return;
+        }
         if(nextWord.equals(")")) {
           nextContext = Context.PREVIOUS;
           return;
@@ -439,8 +447,8 @@ public class TopDownContextFinder extends ContextFinder {
 
   ContextHandler switchBlockH = new ContextHandler() {
     public void enterFrom(Context c) {
-      while(true) {
-        String nextWord = parser.nextWord();
+      while(!parser.isEOF()) {
+        String nextWord = parser.nextGroup(false);
         if(nextWord.equals("}")) {
           nextContext = Context.PREVIOUS;
           return;

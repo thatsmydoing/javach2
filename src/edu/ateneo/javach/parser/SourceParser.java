@@ -94,10 +94,10 @@ public class SourceParser {
     while (currLineNumber < min) {
       index += lineLengths.get(currLineNumber++);
     }
-    while (currLineNumber < lineNumber) {
+    while (currLineNumber < lineNumber && !isEOF()) {
       nextChar();
     }
-    for (int i = 1; i < columnNumber; i++) {
+    for (int i = 1; i < columnNumber && !isEOF(); i++) {
       nextChar();
     }
     if (lineNumber != currLineNumber) {
@@ -118,6 +118,7 @@ public class SourceParser {
     if(index < 0) {
       lastChar = 0;
     }
+    else if (isEOF()) return 0;
     else {
       lastChar = code.charAt(index);
     }
@@ -189,11 +190,13 @@ public class SourceParser {
     }
   }
 
-  String nextWord() {
+  public String nextWord() {
     goToStartOfWord();
     if (isEOF()) return null;
     int start = index;
     goToEndOfWord();
+    if(index < start) return null;
+    if(index >= code.length()) return null;
     return code.substring(start, index);
   }
 
@@ -228,7 +231,7 @@ public class SourceParser {
     if (nextWord.equals("\"")) {
       StringBuilder sb = new StringBuilder();
       boolean slash = false;
-      while (true) {
+      while (!isEOF()) {
         char c = currChar();
         if (c == 0) break;
         sb.append(c);
@@ -252,7 +255,7 @@ public class SourceParser {
     }
     while (nextWord.startsWith("/*")) {
       char lastChar = 0;
-      while(true) {
+      while(!isEOF()) {
         char c = nextChar();
         if(c == 0) break;
         if(lastChar == '*' && c == '/') {

@@ -11,6 +11,7 @@ public abstract class ContextHandler {
     children = new ArrayList<ContextHandler>();
   }
 
+  @SuppressWarnings("unchecked")
   ContextHandler addChild(String type) {
     try {
       Class<? extends ContextHandler> c = (Class<? extends ContextHandler>) Class.forName(type);

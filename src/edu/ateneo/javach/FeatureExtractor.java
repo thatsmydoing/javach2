@@ -2,11 +2,12 @@ package edu.ateneo.javach;
 
 import au.com.bytecode.opencsv.CSVWriter;
 import edu.ateneo.javach.features.FeatureSet;
+import edu.ateneo.javach.parser.DiagnosticParser;
 
 import java.io.*;
 import java.util.Arrays;
 
-public class FeatureExtractor {
+public class FeatureExtractor extends Object {
   public static final int NUM_ERRORS = 3;
   public static final int FEATURES_PER_ERROR = 4;
   public static final int EXTRA_FEATURES = 4;
@@ -56,7 +57,7 @@ public class FeatureExtractor {
   public void start() throws IOException {
     File[] files = rootDir.listFiles(new FilenameFilter() {
       public boolean accept(File dir, String name) {
-        return name.endsWith(".java");
+        return name.startsWith("BRE") && name.endsWith(".java");
       }
     });
     Arrays.sort(files);
@@ -71,18 +72,21 @@ public class FeatureExtractor {
       String[] toWrite = processFile(f);
       if(toWrite != null) writer.writeNext(toWrite);
     }
+    writer.close();
   }
 
   public void setupWriter(String fileName) throws IOException {
     if(writer != null) writer.close();
-    writer = new CSVWriter(new FileWriter(fileName));
+    writer = new CSVWriter(new FileWriter(fileName), '|', CSVWriter.NO_QUOTE_CHARACTER);
     writer.writeNext(headers);
   }
 
   public String[] processFile(File f) {
     try {
       System.out.printf("Processing %-60s", f.getName() + "...");
-      FeatureSet fs = edu.ateneo.javach.features.FeatureSet.extractFeature(f);
+      DiagnosticParser dp = new DiagnosticParser();
+      dp.parseFile(f);
+      FeatureSet fs = FeatureSet.extractFeatures(dp.getDiagnostics());
       
       String[] output = new String[NUM_COLS];
 
@@ -95,7 +99,7 @@ public class FeatureExtractor {
         output[EXTRA_FEATURES-4] = f.getName();
         output[EXTRA_FEATURES-3] = fs.errorCount + "";
         output[EXTRA_FEATURES+2] = fs.errors.get(0).characterType;
-        output[EXTRA_FEATURES+1] = fs.errors.get(0).character + "";
+        output[EXTRA_FEATURES+1] = (int) fs.errors.get(0).character + "";
         output[EXTRA_FEATURES-2] = fs.context.toString();
         output[EXTRA_FEATURES-1] = fs.outerContext.toString();
         output[EXTRA_FEATURES] = fs.errors.get(0).error;
@@ -108,7 +112,7 @@ public class FeatureExtractor {
 
           if(i < fs.errors.size()) {
             errorMessage = fs.errors.get(i).error;
-            errorChar = fs.errors.get(i).character + "";
+            errorChar = (int) fs.errors.get(i).character + "";
             errorType = fs.errors.get(i).characterType;
             offset = fs.errors.get(i).offset;
           }

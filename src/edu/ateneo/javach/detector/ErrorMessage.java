@@ -17,9 +17,12 @@ public class ErrorMessage {
 	}
 	
 	public String getMessage(ResourceBundle messageBundle) {
-		String template = messageBundle.getString(type);
+		String template = type;
+		if(messageBundle.containsKey(type)) {
+		  template = messageBundle.getString(type);
+		}
 		for(String name : strings.keySet()) {
-			template.replaceAll("{"+name+"}", strings.get(name));
+			template.replaceAll("\\{"+name+"\\}", strings.get(name));
 		}
 		return template;
 	}

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Scanner;
 
+import edu.ateneo.javach.features.FeatureSet;
 import edu.ateneo.javach.parser.ContextFinder;
 import edu.ateneo.javach.parser.Diagnostic;
 import edu.ateneo.javach.parser.SourceParser;
@@ -14,7 +15,8 @@ public abstract class Handler {
 	protected SourceParser sp;
 	protected ContextFinder cf;
 	
-	public ErrorMessage handle(List<Diagnostic> d) throws IOException {
+	public ErrorMessage handle(List<FeatureSet> d) throws IOException {
+	    if(d.size() <= 0) return null;
 		Scanner fileScanner = new Scanner(new File(d.get(0).fileName));
 		fileScanner.useDelimiter("\\Z");
 		sp = new SourceParser(fileScanner.next());
@@ -22,5 +24,5 @@ public abstract class Handler {
 		return process(d);
 	}
 	
-	protected abstract ErrorMessage process(List<Diagnostic> d);
+	protected abstract ErrorMessage process(List<FeatureSet> d);
 }

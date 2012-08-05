@@ -6,7 +6,7 @@ import java.util.*;
 import edu.ateneo.javach.parser.*;
 
 public class ParserTester {
-  public static void main(String[] args) throws Exception {
+  /*public static void main(String[] args) throws Exception {
     String[] params = new String[args.length + 1];
     params[0] = "javac";
     for (int i = 0; i < args.length; i++) {
@@ -27,6 +27,14 @@ public class ParserTester {
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(0);
+    }
+  }*/
+  public static void main(String[] args) throws Exception {
+    Scanner sc = new Scanner(new File("res/test/SE_ACTUAL_0052.java"));
+    sc.useDelimiter("\\Z");
+    SourceParser sp = new SourceParser(sc.next());
+    while(!sp.isEOF()) {
+      System.out.println(sp.nextWord());
     }
   }
 }
